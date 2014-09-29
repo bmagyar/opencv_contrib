@@ -91,12 +91,12 @@ int main(int argc, char** argv)
     
     // Now train the model
     cout << "Training..." << endl;
-    int64 tick1 = cv::getTickCount();
+    int64 tick1 = getTickCount();
     ppf_match_3d::PPF3DDetector detector(0.025, 0.05);
     detector.trainModel(pc);
-    int64 tick2 = cv::getTickCount();
+    int64 tick2 = getTickCount();
     cout << endl << "Training complete in "
-         << (double)(tick2-tick1)/ cv::getTickFrequency()
+         << (double)(tick2-tick1)/ getTickFrequency()
          << " sec" << endl << "Loading model..." << endl;
          
     // Read the scene
@@ -105,11 +105,11 @@ int main(int argc, char** argv)
     // Match the model to the scene and get the pose
     cout << endl << "Starting matching..." << endl;
     vector<Pose3DPtr> results;
-    tick1 = cv::getTickCount();
+    tick1 = getTickCount();
     detector.match(pcTest, results, 1.0/40.0, 0.05);
-    tick2 = cv::getTickCount();
+    tick2 = getTickCount();
     cout << endl << "PPF Elapsed Time " <<
-         (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;
+         (tick2-tick1)/getTickFrequency() << " sec" << endl;
          
     // Get only first N results
     int N = 2;
@@ -117,15 +117,15 @@ int main(int argc, char** argv)
     
     // Create an instance of ICP
     ICP icp(100, 0.005f, 2.5f, 8);
-    int64 t1 = cv::getTickCount();
+    int64 t1 = getTickCount();
     
     // Register for all selected poses
     cout << endl << "Performing ICP on " << N << " poses..." << endl;
     icp.registerModelToScene(pc, pcTest, resultsSub);
-    int64 t2 = cv::getTickCount();
+    int64 t2 = getTickCount();
     
     cout << endl << "ICP Elapsed Time " <<
-         (t2-t1)/cv::getTickFrequency() << " sec" << endl;
+         (t2-t1)/getTickFrequency() << " sec" << endl;
          
     cout << "Poses: " << endl;
     // debug first five poses
