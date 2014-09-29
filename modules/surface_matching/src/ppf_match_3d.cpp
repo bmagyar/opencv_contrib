@@ -246,17 +246,13 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   Mat sampled = samplePCByQuantization(PC, xRange, yRange, zRange, (float)sampling_step_relative,0);
 
-  int size = sampled.rows*sampled.rows;
-
-  hashtable_int* hashTable = hashtableCreate(size, NULL);
-
-  int numPPF = sampled.rows*sampled.rows;
+  // size of hashtable, number of ppfs
+  const int numPPF = sampled.rows*sampled.rows;
+  hashtable_int* hashTable = hashtableCreate(numPPF, NULL);
   ppf = Mat(numPPF, PPF_LENGTH, CV_32FC1);
-  int ppfStep = (int)ppf.step;
-  int sampledStep = (int)sampled.step;
 
   // TODO: Maybe I could sample 1/5th of them here. Check the performance later.
-  int numRefPoints = sampled.rows;
+  const int numRefPoints = sampled.rows;
 
   // pre-allocate the hash nodes
   hash_nodes = (THash*)calloc(numRefPoints*numRefPoints, sizeof(THash));
@@ -268,7 +264,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
   // since this is just a training part.
   for (int i=0; i<numRefPoints; i++)
   {
-    float* f1 = (float*)(&sampled.data[i * sampledStep]);
+    float* f1 = (float*)(&sampled.data[i * sampled.step]);
     const double p1[4] = {f1[0], f1[1], f1[2], 0};
     const double n1[4] = {f1[3], f1[4], f1[5], 0};
 
@@ -278,7 +274,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
       // cannnot compute the ppf with myself
       if (i!=j)
       {
-        float* f2 = (float*)(&sampled.data[j * sampledStep]);
+        float* f2 = (float*)(&sampled.data[j * sampled.step]);
         const double p2[4] = {f2[0], f2[1], f2[2], 0};
         const double n2[4] = {f2[3], f2[4], f2[5], 0};
 
@@ -287,7 +283,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
         KeyType hashValue = hashPPF(f, angle_step_radians, distanceStep);
         double alpha = computeAlpha(p1, n1, p2);
         unsigned int corrInd = i*numRefPoints+j;
-        unsigned int ppfInd = corrInd*ppfStep;
+        unsigned int ppfInd = corrInd*ppf.step;
 
         THash* hashNode = &hash_nodes[i*numRefPoints+j];
         hashNode->id = hashValue;
@@ -309,7 +305,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
   angle_step = angle_step_radians;
   distance_step = distanceStep;
   hash_table = hashTable;
-  ppf_step = ppfStep;
+  ppf_step = ppf.step;
   num_ref_points = numRefPoints;
   sampled_pc = sampled;
   trained = true;
