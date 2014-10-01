@@ -137,7 +137,7 @@ int main(int argc, char** argv)
         if (i==0)
         {
             Mat pct = transformPCPose(pc, result->pose);
-            writePLY(pct, "para6700PCTrans.ply");
+            writePLY(pct, "transformed_points.ply");
         }
     }
     
