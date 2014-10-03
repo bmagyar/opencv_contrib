@@ -45,6 +45,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/surface_matching/ppf_match_3d.hpp"
 #include "opencv2/surface_matching/icp.hpp"
 #include "opencv2/surface_matching/ppf_helpers.hpp"
+#include "opencv2/rgbd.hpp"
 
 #include <string>
 #include <cstdio>

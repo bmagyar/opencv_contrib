@@ -231,6 +231,7 @@ PPF3DDetector::~PPF3DDetector()
 void PPF3DDetector::trainModel(const Mat &PC)
 {
   CV_Assert(PC.type() == CV_32F || PC.type() == CV_32FC1);
+  CV_Assert(PC.cols == 6); // as of doxygen of this function
 
   // compute bbox
   float xRange[2], yRange[2], zRange[2];
@@ -463,14 +464,42 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, 
   poseClusters.clear();
 }
 
-void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const double relativeSceneSampleStep, const double relativeSceneDistance)
+void PPF3DDetector::match(const Mat& depthImage, InputArray K, std::vector<Pose3DPtr> &results, const double relativeSceneSampleStep, const double relativeSceneDistance)
+{
+  cv::Mat points;
+  rgbd::depthTo3d(depthImage, K, points);
+  rgbd::RgbdNormals normals_op(points.rows, points.cols,
+                               points.depth(), K);
+  Mat normals;
+  normals_op(points, normals);
+
+  Mat points_w_normals(depthImage.rows*depthImage.cols, 6, CV_32F);
+
+  for(int i=0; i<points.rows; ++i)
+  {
+    for(int j=0; j<points.cols; ++j)
+    {
+      const cv::Vec3f xyz = points.at<cv::Vec3f>(i,j);
+      const cv::Vec3f nxnynz = normals.at<cv::Vec3f>(i,j);
+      for(int k=0; k<3; ++k)
+        points_w_normals.at<float>(i+j,k) = xyz[k];
+      for(int k=0; k<3; ++k)
+        points_w_normals.at<float>(i+j,k+3) = nxnynz[k];
+    }
+  }
+
+  match(points_w_normals, results, relativeSceneSampleStep, relativeSceneDistance);
+}
+
+void PPF3DDetector::match(const Mat& points, std::vector<Pose3DPtr>& results, const double relativeSceneSampleStep, const double relativeSceneDistance)
 {
   if (!trained)
   {
     throw cv::Exception(cv::Error::StsError, "The model is not trained. Cannot match without training", __FUNCTION__, __FILE__, __LINE__);
   }
 
-  CV_Assert(pc.type() == CV_32F || pc.type() == CV_32FC1);
+  CV_Assert(points.type() == CV_32F || points.type() == CV_32FC1);
+  CV_Assert(points.cols == 6); // as of doxygen of this function
   CV_Assert(relativeSceneSampleStep<=1 && relativeSceneSampleStep>0);
 
   scene_sample_step = (int)(1.0/relativeSceneSampleStep);
@@ -484,7 +513,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
   // compute bbox
   float xRange[2], yRange[2], zRange[2];
-  computeBboxStd(pc, xRange, yRange, zRange);
+  computeBboxStd(points, xRange, yRange, zRange);
 
   // sample the point cloud
   /*float dx = xRange[1] - xRange[0];
@@ -492,7 +521,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
   float dz = zRange[1] - zRange[0];
   float diameter = sqrt ( dx * dx + dy * dy + dz * dz );
   float distanceSampleStep = diameter * RelativeSceneDistance;*/
-  Mat sampled = samplePCByQuantization(pc, xRange, yRange, zRange, (float)relativeSceneDistance, 0);
+  Mat sampled = samplePCByQuantization(points, xRange, yRange, zRange, (float)relativeSceneDistance, 0);
 
   // allocate the accumulator : Moved this to the inside of the loop
   /*#if !defined (_OPENMP)

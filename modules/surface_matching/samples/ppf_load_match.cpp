@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     
     // Register for all selected poses
     cout << endl << "Performing ICP on " << N << " poses..." << endl;
-    icp.registerModelToScene(pc, pcTest, resultsSub);
+//    icp.registerModelToScene(pc, pcTest, resultsSub);
     int64 t2 = getTickCount();
     
     cout << endl << "ICP Elapsed Time " <<
